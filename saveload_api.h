@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  scene_saveload_config.h                                               */
+/*  saveload_api.h                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,60 +28,59 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef SCENE_SAVELOAD_CONFIG_H
-#define SCENE_SAVELOAD_CONFIG_H
+#ifndef SAVELOAD_API_H
+#define SAVELOAD_API_H
 
-#include "core/io/resource.h"
+#include "core/object/ref_counted.h"
 
-#include "core/variant/typed_array.h"
+class SaveloadAPI : public RefCounted {
+	GDCLASS(SaveloadAPI, RefCounted);
 
-class SceneSaveloadConfig : public Resource {
-	GDCLASS(SceneSaveloadConfig, Resource);
-	OBJ_SAVE_TYPE(SceneSaveloadConfig);
-	RES_BASE_EXTENSION("svldcfg");
+	static SaveloadAPI *singleton;
 
 private:
-	struct SaveloadProperty {
-		NodePath name;
-		bool sync = true;
-
-		bool operator==(const SaveloadProperty &p_to) {
-			return name == p_to.name;
-		}
-
-		SaveloadProperty() {}
-
-		SaveloadProperty(const NodePath &p_name) {
-			name = p_name;
-		}
-	};
-
-	List<SaveloadProperty> properties;
-	List<NodePath> sync_props;
+	static StringName default_interface;
 
 protected:
 	static void _bind_methods();
 
-	bool _set(const StringName &p_name, const Variant &p_value);
-	bool _get(const StringName &p_name, Variant &r_ret) const;
-	void _get_property_list(List<PropertyInfo> *p_list) const;
-
 public:
-	TypedArray<NodePath> get_properties() const;
+	static SaveloadAPI *get_singleton();
+	static Ref<SaveloadAPI> create_default_interface();
+	static void set_default_interface(const StringName &p_interface);
+	static StringName get_default_interface();
 
-	void add_property(const NodePath &p_path, int p_index = -1);
-	void remove_property(const NodePath &p_path);
-	bool has_property(const NodePath &p_path) const;
+	static Error encode_and_compress_variant(const Variant &p_variant, uint8_t *r_buffer, int &r_len, bool p_allow_object_decoding);
+	static Error decode_and_decompress_variant(Variant &r_variant, const uint8_t *p_buffer, int p_len, int *r_len, bool p_allow_object_decoding);
+	static Error encode_and_compress_variants(const Variant **p_variants, int p_count, uint8_t *r_buffer, int &r_len, bool *r_raw = nullptr, bool p_allow_object_decoding = false);
+	static Error decode_and_decompress_variants(Vector<Variant> &r_variants, const uint8_t *p_buffer, int p_len, int &r_len, bool p_raw = false, bool p_allow_object_decoding = false);
 
-	int property_get_index(const NodePath &p_path) const;
+	virtual Error track(Object *p_object) = 0;
+	virtual Error untrack(Object *p_object) = 0;
 
-	bool property_get_sync(const NodePath &p_path);
-	void property_set_sync(const NodePath &p_path, bool p_enabled);
+	virtual Variant serialize(const Variant &p_configuration_data = Variant()) = 0;
+	virtual Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant()) = 0;
 
+	virtual Error save(const String &p_path, const Variant &p_configuration_data = Variant()) = 0;
+	virtual Error load(const String &p_path, const Variant &p_configuration_data = Variant()) = 0;
 
-	const List<NodePath> &get_sync_properties() { return sync_props; }
-
-	SceneSaveloadConfig() {}
+	SaveloadAPI() { singleton = this; }
+	virtual ~SaveloadAPI() {}
 };
 
-#endif // SCENE_SAVELOAD_CONFIG_H
+//class SaveloadAPIExtension : public SaveloadAPI {
+//	GDCLASS(SaveloadAPIExtension, SaveloadAPI);
+//
+//protected:
+//	static void _bind_methods();
+//
+//public:
+//	virtual Error object_configuration_add(Object *p_object, Variant p_config) override;
+//	virtual Error object_configuration_remove(Object *p_object, Variant p_config) override;
+//
+//	// Extensions
+//	GDVIRTUAL2R(Error, _object_configuration_add, Object *, Variant);
+//	GDVIRTUAL2R(Error, _object_configuration_remove, Object *, Variant);
+//};
+
+#endif // SAVELOAD_API_H
