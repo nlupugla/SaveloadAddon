@@ -31,12 +31,25 @@
 #ifndef SAVELOAD_SPAWNER_H
 #define SAVELOAD_SPAWNER_H
 
+#include "scene_saveload_config.h"
+
+#ifdef GDEXTENSION
+
+#include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/classes/packed_scene.hpp>
+#include <godot_cpp/templates/hash_map.hpp>
+#include <godot_cpp/templates/local_vector.hpp>
+#include <godot_cpp/templates/hash_set.hpp>
+#include <godot_cpp/classes/resource_uid.hpp>
+
+using namespace godot;
+
+#elif
+
 #include "scene/main/node.h"
 #include "scene/resources/packed_scene.h"
 
-#include "scene_saveload_config.h"
-
-class SceneSaveloadInterface;
+#endif
 
 class SaveloadSpawner : public Node {
 	GDCLASS(SaveloadSpawner, Node);
@@ -86,7 +99,6 @@ private:
 
 	LocalVector<SpawnableScene> spawnable_scenes;
 
-	HashSet<ResourceUID::ID> spawnable_ids;
 	NodePath spawn_path;
 
 	ObjectID spawn_parent_id;
@@ -100,8 +112,10 @@ private:
 	void _node_added(Node *p_node);
 	void _node_exit(ObjectID p_id);
 
-	Vector<String> _get_spawnable_scenes() const;
-	void _set_spawnable_scenes(const Vector<String> &p_scenes);
+//	Vector<String> _get_spawnable_scenes() const;
+//	void _set_spawnable_scenes(const Vector<String> &p_scenes);
+    TypedArray<String> _get_spawnable_scenes() const;
+    void _set_spawnable_scenes(const TypedArray<String> &p_scenes);
 
 protected:
 	static void _bind_methods();
@@ -112,8 +126,14 @@ protected:
 	bool _get(const StringName &p_name, Variant &r_ret) const;
 	void _get_property_list(List<PropertyInfo> *p_list) const;
 #endif
+
 public:
-	PackedStringArray get_configuration_warnings() const override;
+
+#ifdef GDEXTENSION
+    PackedStringArray _get_configuration_warnings() const override;
+#elif
+    PackedStringArray get_configuration_warnings() const override;
+#endif
 
 	Node *get_spawn_parent() const {
 		return spawn_parent_id.is_valid() ? Object::cast_to<Node>(ObjectDB::get_instance(spawn_parent_id)) : nullptr;

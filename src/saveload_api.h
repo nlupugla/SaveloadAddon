@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  saveload_editor_plugin.h                                              */
+/*  saveload_api.h                                                        */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,35 +28,58 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef SAVELOAD_EDITOR_PLUGIN_H
-#define SAVELOAD_EDITOR_PLUGIN_H
+#ifndef SAVELOAD_API_H
+#define SAVELOAD_API_H
 
-#include "editor/editor_plugin.h"
-#include "scene/gui/button.h"
+#ifdef GDEXTENSION
 
-class SaveloadEditor;
+#include <godot_cpp/core/class_db.hpp>
 
-class SaveloadEditorPlugin : public EditorPlugin {
-	GDCLASS(SaveloadEditorPlugin, EditorPlugin);
+using namespace godot;
 
-private:
-	Button *button = nullptr;
-	SaveloadEditor *saveload_editor = nullptr;
+#elif
 
-	void _open_request(const String &p_path);
-	void _node_removed(Node *p_node);
+#include "core/object/class_db.h"
 
-	void _pinned();
+#endif
+
+class SaveloadAPI : public Object {
+	GDCLASS(SaveloadAPI, Object);
+
+	static SaveloadAPI *singleton;
 
 protected:
-	void _notification(int p_what);
+	static void _bind_methods();
 
 public:
-	virtual void edit(Object *p_object) override;
-	virtual bool handles(Object *p_object) const override;
-	virtual void make_visible(bool p_visible) override;
+	static SaveloadAPI *get_singleton();
 
-	SaveloadEditorPlugin();
+	Error track(Object *p_object) { return ERR_BUG; }
+	Error untrack(Object *p_object) { return ERR_BUG; }
+
+	Variant serialize(const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
+	Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant()) {return ERR_BUG; }
+
+	Error save(const String &p_path, const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
+	Error load(const String &p_path, const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
+
+	SaveloadAPI() { singleton = this; }
+	~SaveloadAPI() { singleton = nullptr; }
 };
 
-#endif // SAVELOAD_EDITOR_PLUGIN_H
+//class SaveloadAPIExtension : public SaveloadAPI {
+//	GDCLASS(SaveloadAPIExtension, SaveloadAPI);
+//
+//protected:
+//	static void _bind_methods();
+//
+//public:
+//	virtual Error object_configuration_add(Object *p_object, Variant p_config) override;
+//	virtual Error object_configuration_remove(Object *p_object, Variant p_config) override;
+//
+//	// Extensions
+//	GDVIRTUAL2R(Error, _object_configuration_add, Object *, Variant);
+//	GDVIRTUAL2R(Error, _object_configuration_remove, Object *, Variant);
+//};
+
+#endif // SAVELOAD_API_H

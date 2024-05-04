@@ -40,11 +40,18 @@ Dictionary SaveloadSynchronizer::SyncherState::to_dict() const {
 };
 
 SaveloadSynchronizer::SyncherState::SyncherState(const Dictionary &p_dict) {
+#ifdef GDEXTENSION
+    Array property_keys = p_dict.keys();
+    for (int i = 0; i < property_keys.size(); i++) {
+        property_map.insert(property_keys[i], p_dict[property_keys[i]]);
+    }
+#elif
 	List<Variant> property_keys;
 	p_dict.get_key_list(&property_keys);
-	for (const NodePath property_key : property_keys) {
+    for (const NodePath property_key : property_keys) {
 		property_map.insert(property_key, p_dict[property_key]);
 	}
+#endif
 }
 
 void SaveloadSynchronizer::_stop() {
@@ -93,6 +100,17 @@ Node *SaveloadSynchronizer::get_root_node() const {
 	return root_node_cache.is_valid() ? Object::cast_to<Node>(ObjectDB::get_instance(root_node_cache)) : nullptr;
 }
 
+#ifdef GDEXTENSION
+PackedStringArray SaveloadSynchronizer::_get_configuration_warnings() const {
+    PackedStringArray warnings = Node::_get_configuration_warnings();
+
+    if (root_path.is_empty() || !has_node(root_path)) {
+        warnings.push_back(tr("A valid NodePath must be set in the \"Root Path\" property in order for SaveloadSynchronizer to be able to synchronize properties."));
+    }
+
+    return warnings;
+}
+#elif
 PackedStringArray SaveloadSynchronizer::get_configuration_warnings() const {
 	PackedStringArray warnings = Node::get_configuration_warnings();
 
@@ -102,6 +120,7 @@ PackedStringArray SaveloadSynchronizer::get_configuration_warnings() const {
 
 	return warnings;
 }
+#endif
 
 SaveloadSynchronizer::SyncherState SaveloadSynchronizer::get_syncher_state() const {
 	const List<NodePath> props = get_saveload_config()->get_sync_properties();
@@ -115,11 +134,20 @@ SaveloadSynchronizer::SyncherState SaveloadSynchronizer::get_syncher_state() con
 			obj = root_node;
 		} else {
 			ERR_CONTINUE_MSG(!root_node->has_node(prop), vformat("Node '%s' not found.", prop));
-			obj = root_node->get_node(prop);
+#ifdef GDEXTENSION
+            obj = root_node->get_node<Object>(prop);
+#elif
+            obj = root_node->get_node(prop);
+#endif
 		}
-		bool valid = false;
+#ifdef GDEXTENSION
+        Variant value = obj->get_indexed(NodePath(prop.get_concatenated_subnames()));
+        // TODO: What if property isn't valid?
+#elif
+        bool valid = false;
 		Variant value = obj->get_indexed(prop.get_subnames(), &valid);
-		ERR_CONTINUE_MSG(!valid, vformat("Property '%s' not found.", prop));
+        ERR_CONTINUE_MSG(!valid, vformat("Property '%s' not found.", prop));
+#endif
 		sync_state.property_map.insert(prop, value);
 	}
 	return sync_state;
@@ -131,9 +159,14 @@ Error SaveloadSynchronizer::set_syncher_state(const SaveloadSynchronizer::Synche
 		const NodePath node_path = NodePath(path.get_concatenated_names());
 		Node *node = get_root_node()->get_node_or_null(node_path);
 		ERR_CONTINUE_MSG(!node, vformat("could not find node at %s", node_path));
-		node->set_indexed(path.get_subnames(), property.value); //TODO: what if node doesn't have property?
+#ifdef GDEXTENSION
+        node->set_indexed(NodePath(path.get_concatenated_subnames()), property.value);
+#elif
+		node->set_indexed(path.get_subnames(), property.value);
+#endif
+        // TODO: what if node doesn't have property?
 	}
-	return OK; //TODO: need to return a useful error
+	return OK; // TODO: need to return a useful error
 }
 
 void SaveloadSynchronizer::_bind_methods() {

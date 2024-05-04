@@ -29,9 +29,19 @@
 /**************************************************************************/
 
 #include "scene_saveload_config.h"
-
 #include "saveload_api.h"
+
+#ifdef GDEXTENSION
+
+#include <godot_cpp/classes/node.hpp>
+
+using namespace godot;
+
+#elif
+
 #include "scene/main/node.h"
+
+#endif
 
 bool SceneSaveloadConfig::_set(const StringName &p_name, const Variant &p_value) {
 	String prop_name = p_name;

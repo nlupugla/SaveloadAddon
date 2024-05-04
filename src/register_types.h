@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  saveload_editor_plugin.cpp                                            */
+/*  register_types.h                                                      */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,71 +28,17 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include "saveload_editor_plugin.h"
+#ifndef SAVELOAD_REGISTER_TYPES_H
+#define SAVELOAD_REGISTER_TYPES_H
 
-#include "../saveload_synchronizer.h"
-#include "saveload_editor.h"
+#ifdef GDEXTENSION
+#include <godot_cpp/core/class_db.hpp>
+using namespace godot;
+#else
+#include "modules/register_module_types.h"
+#endif
 
-#include "editor/editor_interface.h"
-#include "editor/editor_node.h"
+void initialize_saveload_module(ModuleInitializationLevel p_level);
+void uninitialize_saveload_module(ModuleInitializationLevel p_level);
 
-/// SaveloadEditorPlugin
-
-SaveloadEditorPlugin::SaveloadEditorPlugin() {
-	saveload_editor = memnew(SaveloadEditor);
-	button = EditorNode::get_singleton()->add_bottom_panel_item(TTR("Save Load"), saveload_editor);
-	button->hide();
-	saveload_editor->get_pin()->connect("pressed", callable_mp(this, &SaveloadEditorPlugin::_pinned));
-}
-
-void SaveloadEditorPlugin::_open_request(const String &p_path) {
-	EditorInterface::get_singleton()->open_scene_from_path(p_path);
-}
-
-void SaveloadEditorPlugin::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_ENTER_TREE: {
-			get_tree()->connect("node_removed", callable_mp(this, &SaveloadEditorPlugin::_node_removed));
-		} break;
-	}
-}
-
-void SaveloadEditorPlugin::_node_removed(Node *p_node) {
-	if (p_node && p_node == saveload_editor->get_current()) {
-		saveload_editor->edit(nullptr);
-		if (saveload_editor->is_visible_in_tree()) {
-			EditorNode::get_singleton()->hide_bottom_panel();
-		}
-		button->hide();
-		saveload_editor->get_pin()->set_pressed(false);
-	}
-}
-
-void SaveloadEditorPlugin::_pinned() {
-	if (!saveload_editor->get_pin()->is_pressed()) {
-		if (saveload_editor->is_visible_in_tree()) {
-			EditorNode::get_singleton()->hide_bottom_panel();
-		}
-		button->hide();
-	}
-}
-
-void SaveloadEditorPlugin::edit(Object *p_object) {
-	saveload_editor->edit(Object::cast_to<SaveloadSynchronizer>(p_object));
-}
-
-bool SaveloadEditorPlugin::handles(Object *p_object) const {
-	return p_object->is_class("SaveloadSynchronizer");
-}
-
-void SaveloadEditorPlugin::make_visible(bool p_visible) {
-	if (p_visible) {
-		button->show();
-		EditorNode::get_singleton()->make_bottom_panel_item_visible(saveload_editor);
-	} else if (!saveload_editor->get_pin()->is_pressed()) {
-		if (saveload_editor->is_visible_in_tree()) {
-			EditorNode::get_singleton()->hide_bottom_panel();
-		}
-		button->hide();
-	}
-}
+#endif // SAVELOAD_REGISTER_TYPES_H

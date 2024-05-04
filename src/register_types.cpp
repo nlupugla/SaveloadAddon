@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  saveload_synchronizer.h                                               */
+/*  register_types.cpp                                                    */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,55 +28,73 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef SAVELOAD_SYNCHRONIZER_H
-#define SAVELOAD_SYNCHRONIZER_H
+#include "register_types.h"
 
-#include "scene/main/node.h"
+#include "saveload_api.h"
+#include "saveload_spawner.h"
+#include "saveload_synchronizer.h"
+#include "scene_saveload.h"
 
-#include "scene_saveload_config.h"
+#ifdef TOOLS_ENABLED
+#include "editor/saveload_editor_plugin.h"
+#endif
 
-class SaveloadSynchronizer : public Node {
-	GDCLASS(SaveloadSynchronizer, Node);
+#ifdef GDEXTENSION
+#include <godot_cpp/classes/engine.hpp>
+#endif
 
-public:
-	struct SyncherState {
-		HashMap<const NodePath, Variant> property_map;
+static SaveloadAPI *saveload_api = NULL;
 
-		Dictionary to_dict() const;
+void initialize_saveload_module(ModuleInitializationLevel p_level) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
+		saveload_api = memnew(SceneSaveload);
+		GDREGISTER_CLASS(SaveloadAPI);
+#ifdef GDEXTENSION
+        Engine::get_singleton()->register_singleton("SaveloadAPI", saveload_api);
+#elif
+        Engine::get_singleton()->add_singleton(Engine::Singleton("SaveloadAPI", saveload_api));
+#endif
+	}
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		GDREGISTER_CLASS(SceneSaveloadConfig);
+		GDREGISTER_CLASS(SaveloadSpawner);
+		GDREGISTER_CLASS(SaveloadSynchronizer);
+	}
+#ifdef TOOLS_ENABLED
+	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+		EditorPlugins::add_by_type<SaveloadEditorPlugin>();
+	}
+#endif
+}
 
-		SyncherState(HashMap<const NodePath, Variant> p_property_map) { property_map = p_property_map; }
-		SyncherState(const Dictionary &p_dict);
-		SyncherState() {}
-	};
+void uninitialize_saveload_module(ModuleInitializationLevel p_level) {
+	if (saveload_api) {
+#ifdef GDEXTENSION
+        Engine::get_singleton()->unregister_singleton("SaveloadAPI");
+#elif
+        Engine::get_singleton()->remove_singleton("SaveloadAPI");
+#endif
+		memdelete(saveload_api);
+		saveload_api = NULL;
+	}
+}
 
-private:
-	Ref<SceneSaveloadConfig> saveload_config;
-	NodePath root_path = NodePath(".."); // Start with parent, like with AnimationPlayer.
+#ifdef GDEXTENSION
+#include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/core/defs.hpp>
+#include <godot_cpp/core/memory.hpp>
 
-	ObjectID root_node_cache;
+using namespace godot;
 
-	void _start();
-	void _stop();
-	void _update_process();
+extern "C" {
+GDExtensionBool GDE_EXPORT saveload_init(GDExtensionInterfaceGetProcAddress p_interface, const GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
+	GDExtensionBinding::InitObject init_obj(p_interface, p_library, r_initialization);
 
-protected:
-	static void _bind_methods();
-	void _notification(int p_what);
+	init_obj.register_initializer(initialize_saveload_module);
+	init_obj.register_terminator(uninitialize_saveload_module);
+	init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
 
-public:
-	SyncherState get_syncher_state() const;
-	Error set_syncher_state(const SyncherState &p_syncher_state);
-
-	PackedStringArray get_configuration_warnings() const override;
-
-	void set_saveload_config(Ref<SceneSaveloadConfig> p_config);
-	Ref<SceneSaveloadConfig> get_saveload_config() const;
-
-	Node *get_root_node() const;
-	void set_root_path(const NodePath &p_path);
-	NodePath get_root_path() const;
-
-	SaveloadSynchronizer() {}
-};
-
-#endif // SAVELOAD_SYNCHRONIZER_H
+	return init_obj.init();
+}
+}
+#endif

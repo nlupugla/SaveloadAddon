@@ -35,14 +35,31 @@
 #include "saveload_spawner.h"
 #include "saveload_synchronizer.h"
 
+#ifdef GDEXTENSION
+#include <godot_cpp/variant/utility_functions.hpp>
+#endif
+
 class SceneSaveload : public SaveloadAPI {
 	GDCLASS(SceneSaveload, SaveloadAPI);
 
 private:
-	template <class T>
-	static T *get_id_as(const ObjectID &p_id) {
+
+#ifdef GDEXTENSION
+    typedef uint64_t ID;
+    template <class T>
+    static T *get_id_as(const ID &p_id) {
+        return UtilityFunctions::is_instance_id_valid(p_id) ? Object::cast_to<T>(ObjectDB::get_instance(p_id)) : nullptr;
+    }
+#elif
+    typedef ObjectID ID;
+    template <class T>
+	static T *get_id_as(const ID &p_id) {
 		return p_id.is_valid() ? Object::cast_to<T>(ObjectDB::get_instance(p_id)) : nullptr;
 	}
+#endif
+
+template <class T>
+T *get_node(const NodePath &p_path);
 
 protected:
 	static void _bind_methods();
@@ -57,8 +74,8 @@ protected:
 		SaveloadState(const Dictionary &saveload_dict);
 	};
 
-	HashSet<ObjectID> spawners;
-	HashSet<ObjectID> synchers;
+	HashSet<ID> spawners;
+	HashSet<ID> synchers;
 
 	void track_spawner(const SaveloadSpawner &p_spawner);
 	void untrack_spawner(const SaveloadSpawner &p_spawner);
@@ -72,14 +89,14 @@ public:
 	TypedArray<SaveloadSpawner> get_spawners() const;
 	TypedArray<SaveloadSynchronizer> get_synchers() const;
 
-	virtual Error track(Object *p_object) override;
-	virtual Error untrack(Object *p_object) override;
+	Error track(Object *p_object);
+	Error untrack(Object *p_object);
 
-	virtual Variant serialize(const Variant &p_configuration_data = Variant()) override;
-	virtual Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant()) override;
+	Variant serialize(const Variant &p_configuration_data = Variant());
+	Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant());
 
-	virtual Error save(const String &p_path, const Variant &p_configuration_data = Variant()) override;
-	virtual Error load(const String &p_path, const Variant &p_configuration_data = Variant()) override;
+	Error save(const String &p_path, const Variant &p_configuration_data = Variant());
+	Error load(const String &p_path, const Variant &p_configuration_data = Variant());
 
 	SceneSaveload() {}
 	~SceneSaveload() {}

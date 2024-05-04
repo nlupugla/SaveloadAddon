@@ -31,14 +31,24 @@
 #ifndef SCENE_SAVELOAD_CONFIG_H
 #define SCENE_SAVELOAD_CONFIG_H
 
-#include "core/io/resource.h"
+#ifdef GDEXTENSION
 
+#include <godot_cpp/classes/resource.hpp>
+#include <godot_cpp/variant/typed_array.hpp>
+
+using namespace godot;
+
+#elif
+
+#include "core/io/resource.h"
 #include "core/variant/typed_array.h"
+
+#endif
 
 class SceneSaveloadConfig : public Resource {
 	GDCLASS(SceneSaveloadConfig, Resource);
-	OBJ_SAVE_TYPE(SceneSaveloadConfig);
-	RES_BASE_EXTENSION("svldcfg");
+//	OBJ_SAVE_TYPE(SceneSaveloadConfig);
+//	RES_BASE_EXTENSION("svldcfg");
 
 private:
 	struct SaveloadProperty {

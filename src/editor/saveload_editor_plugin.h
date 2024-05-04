@@ -1,5 +1,5 @@
 /**************************************************************************/
-/*  saveload_api.h                                                        */
+/*  saveload_editor_plugin.h                                              */
 /**************************************************************************/
 /*                         This file is part of:                          */
 /*                             GODOT ENGINE                               */
@@ -28,48 +28,59 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#ifndef SAVELOAD_API_H
-#define SAVELOAD_API_H
+#ifndef SAVELOAD_EDITOR_PLUGIN_H
+#define SAVELOAD_EDITOR_PLUGIN_H
 
-#include "core/object/class_db.h"
+#ifdef GDEXTENSION
 
-class SaveloadAPI : public Object {
-	GDCLASS(SaveloadAPI, Object);
+#include <godot_cpp/classes/editor_plugin.hpp>
+#include <godot_cpp/classes/button.hpp>
 
-	static SaveloadAPI *singleton;
+using namespace godot;
+
+#else
+
+#include "editor/editor_plugin.h"
+#include "scene/gui/button.h"
+
+#endif
+
+class SaveloadEditor;
+
+class SaveloadEditorPlugin : public EditorPlugin {
+	GDCLASS(SaveloadEditorPlugin, EditorPlugin);
+
+private:
+	Button *button = nullptr;
+	SaveloadEditor *saveload_editor = nullptr;
+
+    void hide_bottom_panel();
+    void make_bottom_panel_item_visible(Control *item);
+    Button *add_control_to_bottom_panel(Control *control, const String &title);
+
+	void _open_request(const String &p_path);
+	void _node_removed(Node *p_node);
+
+	void _pinned();
 
 protected:
-	static void _bind_methods();
+#ifdef GDEXTENSION
+    static void _bind_methods();
+#endif
+	void _notification(int p_what);
 
 public:
-	static SaveloadAPI *get_singleton();
+#ifdef GDEXTENSION
+    virtual void _edit(Object *p_object) override;
+    virtual bool _handles(Object *p_object) const override;
+    virtual void _make_visible(bool p_visible) override;
+#elif
+	virtual void edit(Object *p_object) override;
+	virtual bool handles(Object *p_object) const override;
+	virtual void make_visible(bool p_visible) override;
+#endif
 
-	virtual Error track(Object *p_object) = 0;
-	virtual Error untrack(Object *p_object) = 0;
-
-	virtual Variant serialize(const Variant &p_configuration_data = Variant()) = 0;
-	virtual Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant()) = 0;
-
-	virtual Error save(const String &p_path, const Variant &p_configuration_data = Variant()) = 0;
-	virtual Error load(const String &p_path, const Variant &p_configuration_data = Variant()) = 0;
-
-	SaveloadAPI() { singleton = this; }
-	virtual ~SaveloadAPI() { singleton = nullptr; }
+	SaveloadEditorPlugin();
 };
 
-//class SaveloadAPIExtension : public SaveloadAPI {
-//	GDCLASS(SaveloadAPIExtension, SaveloadAPI);
-//
-//protected:
-//	static void _bind_methods();
-//
-//public:
-//	virtual Error object_configuration_add(Object *p_object, Variant p_config) override;
-//	virtual Error object_configuration_remove(Object *p_object, Variant p_config) override;
-//
-//	// Extensions
-//	GDVIRTUAL2R(Error, _object_configuration_add, Object *, Variant);
-//	GDVIRTUAL2R(Error, _object_configuration_remove, Object *, Variant);
-//};
-
-#endif // SAVELOAD_API_H
+#endif // SAVELOAD_EDITOR_PLUGIN_H

@@ -31,18 +31,44 @@
 #ifndef SAVELOAD_EDITOR_H
 #define SAVELOAD_EDITOR_H
 
+#include "../scene_saveload_config.h"
+
+#ifdef GDEXTENSION
+
+#include <godot_cpp/classes/editor_plugin.hpp>
+#include <godot_cpp/classes/v_box_container.hpp>
+#include <godot_cpp/classes/label.hpp>
+#include <godot_cpp/classes/tree.hpp>
+#include <godot_cpp/classes/accept_dialog.hpp>
+#include <godot_cpp/classes/confirmation_dialog.hpp>
+#include <godot_cpp/classes/line_edit.hpp>
+// TODO: scene_tree_editor
+// TODO: property_selector
+// TODO: dialogs
+
+using namespace godot;
+
+#else
+
 #include "editor/editor_plugin.h"
-#include "modules/saveload/scene_saveload_config.h"
 #include "scene/gui/box_container.h"
+#include "scene/gui/dialogs.h"
+#include "editor/gui/scene_tree_editor.h"
+#include "scene/gui/tree.h"
+#include "editor/property_selector.h"
 
 class ConfirmationDialog;
-class SaveloadSynchronizer;
 class AcceptDialog;
 class LineEdit;
 class Tree;
 class TreeItem;
+
+#endif
+
 class PropertySelector;
 class SceneTreeDialog;
+
+class SaveloadSynchronizer;
 
 class SaveloadEditor : public VBoxContainer {
 	GDCLASS(SaveloadEditor, VBoxContainer);

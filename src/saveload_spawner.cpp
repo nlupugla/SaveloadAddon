@@ -32,8 +32,21 @@
 #include "saveload_api.h"
 #include "scene_saveload.h"
 
+#ifdef GDEXTENSION
+
+#include <godot_cpp/classes/window.hpp>
+#include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/file_access.hpp>
+#include <godot_cpp/variant/callable.hpp>
+#include <godot_cpp/classes/resource_loader.hpp>
+
+using namespace godot;
+
+#elif
+
 #include "scene/main/window.h"
-#include "scene/scene_string_names.h"
+
+#endif
 
 /*******************************
  * SpawnInfo Definitions Start *
@@ -165,6 +178,16 @@ void SaveloadSpawner::_get_property_list(List<PropertyInfo> *p_list) const {
 }
 #endif
 
+#ifdef GDEXTENSION
+PackedStringArray SaveloadSpawner::_get_configuration_warnings() const {
+    PackedStringArray warnings = Node::_get_configuration_warnings();
+
+    if (spawn_path.is_empty() || !has_node(spawn_path)) {
+        warnings.push_back(tr("A valid NodePath must be set in the \"Spawn Path\" property in order for SaveloadSpawner to be able to spawn Nodes."));
+    }
+    return warnings;
+}
+#elif
 PackedStringArray SaveloadSpawner::get_configuration_warnings() const {
 	PackedStringArray warnings = Node::get_configuration_warnings();
 
@@ -173,12 +196,17 @@ PackedStringArray SaveloadSpawner::get_configuration_warnings() const {
 	}
 	return warnings;
 }
+#endif
 
 void SaveloadSpawner::add_spawnable_scene(const String &p_path) {
 	SpawnableScene sc;
 	sc.path = p_path;
 	if (Engine::get_singleton()->is_editor_hint()) {
-		ERR_FAIL_COND(!FileAccess::exists(p_path));
+#ifdef GDEXTENSION
+        ERR_FAIL_COND(!FileAccess::file_exists(p_path));
+#elif
+        ERR_FAIL_COND(!FileAccess::exists(p_path));
+#endif
 	}
 	spawnable_scenes.push_back(sc);
 #ifdef TOOLS_ENABLED
@@ -187,9 +215,14 @@ void SaveloadSpawner::add_spawnable_scene(const String &p_path) {
 	}
 #endif
 	Node *node = get_spawn_parent();
-	if (spawnable_scenes.size() == 1 && node && !node->is_connected("child_entered_tree", callable_mp(this, &SaveloadSpawner::_node_added))) {
-		node->connect("child_entered_tree", callable_mp(this, &SaveloadSpawner::_node_added));
-	}
+#ifdef GDEXTENSION
+    Callable node_added_callable = Callable(this, StringName("_node_added"));
+#elif
+    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added));
+#endif
+    if (spawnable_scenes.size() == 1 && node && !node->is_connected(StringName("child_entered_tree"), node_added_callable)) {
+        node->connect(StringName("child_entered_tree"), node_added_callable);
+    }
 }
 
 int SaveloadSpawner::get_spawnable_scene_count() const {
@@ -209,21 +242,26 @@ void SaveloadSpawner::clear_spawnable_scenes() {
 	}
 #endif
 	Node *node = get_spawn_parent();
-	if (node && node->is_connected("child_entered_tree", callable_mp(this, &SaveloadSpawner::_node_added))) {
-		node->disconnect("child_entered_tree", callable_mp(this, &SaveloadSpawner::_node_added));
+#ifdef GDEXTENSION
+    Callable node_added_callable = Callable(this, "_node_added");
+#elif
+    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added));
+#endif
+	if (node && node->is_connected(StringName("child_entered_tree"), node_added_callable)) {
+		node->disconnect(StringName("child_entered_tree"), node_added_callable);
 	}
 }
 
-Vector<String> SaveloadSpawner::_get_spawnable_scenes() const {
-	Vector<String> ss;
+TypedArray<String> SaveloadSpawner::_get_spawnable_scenes() const {
+	TypedArray<String> ss;
 	ss.resize(spawnable_scenes.size());
 	for (int i = 0; i < ss.size(); i++) {
-		ss.write[i] = spawnable_scenes[i].path;
+		ss[i] = spawnable_scenes[i].path;
 	}
 	return ss;
 }
 
-void SaveloadSpawner::_set_spawnable_scenes(const Vector<String> &p_scenes) {
+void SaveloadSpawner::_set_spawnable_scenes(const TypedArray<String> &p_scenes) {
 	clear_spawnable_scenes();
 	for (int i = 0; i < p_scenes.size(); i++) {
 		add_spawnable_scene(p_scenes[i]);
@@ -265,17 +303,22 @@ void SaveloadSpawner::_update_spawn_parent() {
 	//		return;
 	//	}
 	//#endif
+#ifdef GDEXTENSION
+    Callable node_added_callable = Callable(this, "_node_added");
+#elif
+    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added));
+#endif
 	if (spawn_parent_id.is_valid()) {
 		Node *spawn_parent = Object::cast_to<Node>(ObjectDB::get_instance(spawn_parent_id));
-		if (spawn_parent && spawn_parent->is_connected("child_entered_tree", callable_mp(this, &SaveloadSpawner::_node_added))) {
-			spawn_parent->disconnect("child_entered_tree", callable_mp(this, &SaveloadSpawner::_node_added));
+		if (spawn_parent && spawn_parent->is_connected("child_entered_tree", node_added_callable)) {
+			spawn_parent->disconnect(StringName("child_entered_tree"), node_added_callable);
 		}
 	}
 	Node *spawn_parent = spawn_path.is_empty() && is_inside_tree() ? nullptr : get_node_or_null(spawn_path);
 	if (spawn_parent) {
 		spawn_parent_id = spawn_parent->get_instance_id();
 		if (get_spawnable_scene_count()) {
-			spawn_parent->connect("child_entered_tree", callable_mp(this, &SaveloadSpawner::_node_added));
+			spawn_parent->connect(StringName("child_entered_tree"), node_added_callable);
 		}
 	} else {
 		spawn_parent_id = ObjectID();
@@ -297,7 +340,12 @@ void SaveloadSpawner::_notification(int p_what) {
 				NodePath path = spawn_infos[size - 1 - i].path;
 				Node *node = get_node_or_null(path);
 				ERR_CONTINUE_MSG(!node, vformat("could not find node at path %s", path));
-				node->disconnect(SceneStringNames::get_singleton()->tree_exiting, callable_mp(this, &SaveloadSpawner::_node_exit));
+#ifdef GDEXTENSION
+                Callable node_exit_callable = Callable(this, "_node_exit");
+#elif
+                Callable node_exit_callable = callable_mp(this, &SaveloadSpawner::_node_added));
+#endif
+				node->disconnect(StringName("tree_exiting"), node_exit_callable);
 			}
 			spawner_state.clear();
 			SaveloadAPI::get_singleton()->untrack(this);
@@ -336,8 +384,16 @@ void SaveloadSpawner::_track(Node *p_node, int p_scene_index, const Variant &p_s
 	if (!spawner_state.has(node_path)) { //TODO: Is this redundant with the checks in _noded_added?
 		SpawnInfo spawn_info = SpawnInfo(node_path, p_scene_index, p_spawn_args);
 		spawner_state.push_back(spawn_info);
-		p_node->connect(SceneStringNames::get_singleton()->tree_exiting, callable_mp(this, &SaveloadSpawner::_node_exit).bind(p_node->get_instance_id()), CONNECT_ONE_SHOT);
-		SaveloadAPI::get_singleton()->track(this);
+#ifdef GDEXTENSION
+        Callable node_exit_callable = Callable(this, "_node_exit");
+        Array args = Array();
+        args.push_back(p_node->get_instance_id());
+        p_node->connect(StringName("tree_exiting"), node_exit_callable.bindv(args), CONNECT_ONE_SHOT);
+#elif
+        Callable node_exit_callable = callable_mp(this, &SaveloadSpawner::_node_added));
+        p_node->connect(StringName("tree_exiting"), node_exit_callable.bind(p_node->get_instance_id()), CONNECT_ONE_SHOT);
+#endif
+        SaveloadAPI::get_singleton()->track(this);
 	}
 }
 
@@ -359,10 +415,10 @@ int SaveloadSpawner::find_spawnable_scene_index_from_path(const String &p_scene)
 void SaveloadSpawner::load_spawn_state(const SaveloadSpawner::SpawnerState &p_spawner_state) {
 	free_tracked_nodes();
 	for (const SpawnInfo &spawn_info : p_spawner_state.spawn_infos) {
-		const Vector<StringName> spawn_path_as_vector = spawn_info.path.get_names();
-		ERR_CONTINUE_MSG(spawn_path_as_vector.size() < 1, vformat("spawn path %s does not contain a node name", spawn_info.path));
-		String spawn_name = spawn_path_as_vector[spawn_path_as_vector.size() - 1];
-		_spawn(spawn_name, spawn_info.scene_index, spawn_info.spawn_args); //TODO: what do I do with spawn errors?
+        int64_t name_count = spawn_info.path.get_name_count();
+		ERR_CONTINUE_MSG(name_count < 1, vformat("spawn path %s does not contain a node name", spawn_info.path));
+		String spawn_name = spawn_path.get_name(name_count - 1);
+		_spawn(spawn_name, spawn_info.scene_index, spawn_info.spawn_args); // TODO: what do I do with spawn errors?
 	}
 }
 
@@ -405,7 +461,7 @@ Error SaveloadSpawner::_spawn(const String &p_name, int p_scene_index, const Var
 	parent->add_child(node, true);
 	_track(node, p_scene_index, p_spawn_args);
 
-	emit_signal(SNAME("spawned"), node);
+	emit_signal(StringName("spawned"), node);
 
 	return OK;
 }
@@ -423,7 +479,7 @@ Node *SaveloadSpawner::spawn(const Variant &p_data) {
 
 	_track(node, CUSTOM_SPAWN, p_data);
 	parent->add_child(node, true);
-	emit_signal(SNAME("spawned"), node);
+	emit_signal(StringName("spawned"), node);
 
 	return node;
 }
@@ -433,7 +489,11 @@ Node *SaveloadSpawner::instantiate_scene(int p_id) {
 	ERR_FAIL_UNSIGNED_INDEX_V((uint32_t)p_id, spawnable_scenes.size(), nullptr);
 	SpawnableScene &sc = spawnable_scenes[p_id];
 	if (sc.cache.is_null()) {
+#ifdef GDEXTENSION
+        sc.cache = ResourceLoader::get_singleton()->load(sc.path);
+#elif
 		sc.cache = ResourceLoader::load(sc.path);
+#endif
 	}
 	ERR_FAIL_COND_V_MSG(sc.cache.is_null(), nullptr, "Invalid spawnable scene: " + sc.path);
 	return sc.cache->instantiate();
@@ -442,13 +502,17 @@ Node *SaveloadSpawner::instantiate_scene(int p_id) {
 Node *SaveloadSpawner::instantiate_custom(const Variant &p_data) {
 	ERR_FAIL_COND_V_MSG(spawn_limit && spawn_limit <= spawner_state.size(), nullptr, "Spawn limit reached!");
 	ERR_FAIL_COND_V_MSG(!spawn_function.is_valid(), nullptr, "Custom spawn requires a valid 'spawn_function'.");
-	const Variant *argv[1] = { &p_data };
-	Variant ret;
+    Variant ret;
+#ifdef GDEXTENSION
+    ret = spawn_function.callv(p_data);
+#elif
+    const Variant *argv[1] = { &p_data };
 	Callable::CallError ce;
 	spawn_function.callp(argv, 1, ret, ce);
 	ERR_FAIL_COND_V_MSG(ce.error != Callable::CallError::CALL_OK, nullptr, "Failed to call spawn function.");
-	ERR_FAIL_COND_V_MSG(ret.get_type() != Variant::OBJECT, nullptr, "The spawn function must return a Node.");
-	return Object::cast_to<Node>(ret.operator Object *());
+#endif
+    ERR_FAIL_COND_V_MSG(ret.get_type() != Variant::OBJECT, nullptr, "The spawn function must return a Node.");
+    return Object::cast_to<Node>(ret.operator Object *());
 }
 
 /***********************************
