@@ -232,62 +232,62 @@ void SaveloadPropertySelector::_item_selected() {
         class_type = instance->get_class();
     }
 
-    DocTools *dd = EditorHelp::get_doc_data();
-    String text;
-    if (properties) {
-        while (!class_type.is_empty()) {
-            HashMap<String, DocData::ClassDoc>::Iterator E = dd->class_list.find(class_type);
-            if (E) {
-                for (int i = 0; i < E->value.properties.size(); i++) {
-                    if (E->value.properties[i].name == name) {
-                        text = DTR(E->value.properties[i].description);
-                        break;
-                    }
-                }
-            }
+//    DocTools *dd = EditorHelp::get_doc_data();
+//    String text;
+//    if (properties) {
+//        while (!class_type.is_empty()) {
+//            HashMap<String, DocData::ClassDoc>::Iterator E = dd->class_list.find(class_type);
+//            if (E) {
+//                for (int i = 0; i < E->value.properties.size(); i++) {
+//                    if (E->value.properties[i].name == name) {
+//                        text = DTR(E->value.properties[i].description);
+//                        break;
+//                    }
+//                }
+//            }
+//
+//            if (!text.is_empty()) {
+//                break;
+//            }
+//
+//            // The property may be from a parent class, keep looking.
+//            class_type = ClassDB::get_parent_class(class_type);
+//        }
+//    } else {
+//        while (!class_type.is_empty()) {
+//            HashMap<String, DocData::ClassDoc>::Iterator E = dd->class_list.find(class_type);
+//            if (E) {
+//                for (int i = 0; i < E->value.methods.size(); i++) {
+//                    if (E->value.methods[i].name == name) {
+//                        text = DTR(E->value.methods[i].description);
+//                        break;
+//                    }
+//                }
+//            }
 
-            if (!text.is_empty()) {
-                break;
-            }
-
-            // The property may be from a parent class, keep looking.
-            class_type = ClassDB::get_parent_class(class_type);
-        }
-    } else {
-        while (!class_type.is_empty()) {
-            HashMap<String, DocData::ClassDoc>::Iterator E = dd->class_list.find(class_type);
-            if (E) {
-                for (int i = 0; i < E->value.methods.size(); i++) {
-                    if (E->value.methods[i].name == name) {
-                        text = DTR(E->value.methods[i].description);
-                        break;
-                    }
-                }
-            }
-
-            if (!text.is_empty()) {
-                break;
-            }
+//            if (!text.is_empty()) {
+//                break;
+//            }
 
             // The method may be from a parent class, keep looking.
-            class_type = ClassDB::get_parent_class(class_type);
-        }
-    }
+//            class_type = ClassDB::get_parent_class(class_type);
+//        }
+//    }
 
-    if (!text.is_empty()) {
-        // Display both property name and description, since the help bit may be displayed
-        // far away from the location (especially if the dialog was resized to be taller).
-        help_bit->set_text(vformat("[b]%s[/b]: %s", name, text));
-        help_bit->get_rich_text()->set_self_modulate(Color(1, 1, 1, 1));
-    } else {
-        // Use nested `vformat()` as translators shouldn't interfere with BBCode tags.
-        help_bit->set_text(vformat(TTR("No description available for %s."), vformat("[b]%s[/b]", name)));
-        help_bit->get_rich_text()->set_self_modulate(Color(1, 1, 1, 0.5));
-    }
+//    if (!text.is_empty()) {
+//        // Display both property name and description, since the help bit may be displayed
+//        // far away from the location (especially if the dialog was resized to be taller).
+//        help_bit->set_text(vformat("[b]%s[/b]: %s", name, text));
+//        help_bit->get_rich_text()->set_self_modulate(Color(1, 1, 1, 1));
+//    } else {
+//        // Use nested `vformat()` as translators shouldn't interfere with BBCode tags.
+//        help_bit->set_text(vformat(TTR("No description available for %s."), vformat("[b]%s[/b]", name)));
+//        help_bit->get_rich_text()->set_self_modulate(Color(1, 1, 1, 0.5));
+//    }
 }
 
 void SaveloadPropertySelector::_hide_requested() {
-    _cancel_pressed(); // From AcceptDialog.
+    //_cancel_pressed(); // From AcceptDialog.
 }
 
 void SaveloadPropertySelector::_notification(int p_what) {
@@ -331,23 +331,23 @@ SaveloadPropertySelector::SaveloadPropertySelector() {
     add_child(vbc);
     //set_child_rect(vbc);
     search_box = memnew(LineEdit);
-    vbc->add_margin_child(tr("Search:"), search_box);
-    search_box->connect("text_changed", callable_mp(this, &SaveloadPropertySelector::_text_changed));
-    search_box->connect("gui_input", callable_mp(this, &SaveloadPropertySelector::_sbox_input));
-    search_options = memnew(Tree);
-    vbc->add_margin_child(tr("Matches:"), search_options, true);
-    set_ok_button_text(tr("Open"));
-    get_ok_button()->set_disabled(true);
-    register_text_enter(search_box);
-    set_hide_on_ok(false);
-    search_options->connect("item_activated", callable_mp(this, &SaveloadPropertySelector::_confirmed));
-    search_options->connect("cell_selected", callable_mp(this, &SaveloadPropertySelector::_item_selected));
-    search_options->set_hide_root(true);
-    search_options->set_hide_folding(true);
-
-    help_bit = memnew(EditorHelpBit);
-    vbc->add_margin_child(TTR("Description:"), help_bit);
-    help_bit->connect("request_hide", callable_mp(this, &PropertySelector::_hide_requested));
+//    vbc->add_margin_child(tr("Search:"), search_box);
+//    search_box->connect("text_changed", callable_mp(this, &SaveloadPropertySelector::_text_changed));
+//    search_box->connect("gui_input", callable_mp(this, &SaveloadPropertySelector::_sbox_input));
+//    search_options = memnew(Tree);
+//    vbc->add_margin_child(tr("Matches:"), search_options, true);
+//    set_ok_button_text(tr("Open"));
+//    get_ok_button()->set_disabled(true);
+//    register_text_enter(search_box);
+//    set_hide_on_ok(false);
+//    search_options->connect("item_activated", callable_mp(this, &SaveloadPropertySelector::_confirmed));
+//    search_options->connect("cell_selected", callable_mp(this, &SaveloadPropertySelector::_item_selected));
+//    search_options->set_hide_root(true);
+//    search_options->set_hide_folding(true);
+//
+//    help_bit = memnew(EditorHelpBit);
+//    vbc->add_margin_child(TTR("Description:"), help_bit);
+//    help_bit->connect("request_hide", callable_mp(this, &PropertySelector::_hide_requested));
 }
 
 #endif

@@ -22,7 +22,7 @@ opts = Variables([], ARGUMENTS)
 
 opts.Update(env)
 
-result_path = os.path.join("bin", "saveload")
+result_path = os.path.join("demo", "bin")
 
 # Our includes and sources
 env.Append(CPPDEFINES=["GDEXTENSION"])  # Tells our sources we are building a GDExtension, not a module.
@@ -41,7 +41,7 @@ sources = [
 
 # Make the shared library
 result_name = "saveload{}{}".format(env["suffix"], env["SHLIBSUFFIX"])
-library = env.SharedLibrary(target=os.path.join(result_path, "lib", result_name), source=sources)
+library = env.SharedLibrary(target=os.path.join(result_path, result_name), source=sources)
 
 Default(library)
 
