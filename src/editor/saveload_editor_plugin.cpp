@@ -76,7 +76,6 @@ Button *SaveloadEditorPlugin::add_control_to_bottom_panel(Control *control, cons
 SaveloadEditorPlugin::SaveloadEditorPlugin() {
     saveload_editor = memnew(SaveloadEditor);
     button = add_control_to_bottom_panel(saveload_editor, "Save Load");
-    //button = EditorNode::get_singleton()->add_bottom_panel_item(TTR("Save Load"), saveload_editor);
     button->hide();
 #ifdef GDEXTENSION
     Callable pinned_callable = Callable(this, StringName("_pinned"));
@@ -93,6 +92,12 @@ void SaveloadEditorPlugin::_open_request(const String &p_path) {
     EditorInterface::get_singleton()->open_scene_from_path(p_path);
 #endif
 }
+
+#ifdef GDEXTENSION
+void SaveloadEditorPlugin::_bind_methods() {
+
+}
+#endif
 
 void SaveloadEditorPlugin::_notification(int p_what) {
     switch (p_what) {
@@ -113,7 +118,6 @@ void SaveloadEditorPlugin::_node_removed(Node *p_node) {
         saveload_editor->edit(nullptr);
         if (saveload_editor->is_visible_in_tree()) {
             hide_bottom_panel();
-            //EditorNode::get_singleton()->hide_bottom_panel();
         }
         button->hide();
         saveload_editor->get_pin()->set_pressed(false);
@@ -124,7 +128,6 @@ void SaveloadEditorPlugin::_pinned() {
     if (!saveload_editor->get_pin()->is_pressed()) {
         if (saveload_editor->is_visible_in_tree()) {
             hide_bottom_panel();
-            //EditorNode::get_singleton()->hide_bottom_panel();
         }
         button->hide();
     }
@@ -154,11 +157,9 @@ void SaveloadEditorPlugin::make_visible(bool p_visible) {
     if (p_visible) {
         button->show();
         make_bottom_panel_item_visible(saveload_editor);
-        //EditorNode::get_singleton()->make_bottom_panel_item_visible(saveload_editor);
     } else if (!saveload_editor->get_pin()->is_pressed()) {
         if (saveload_editor->is_visible_in_tree()) {
             hide_bottom_panel();
-            //EditorNode::get_singleton()->hide_bottom_panel();
         }
         button->hide();
     }
