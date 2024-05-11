@@ -593,7 +593,7 @@ void SaveloadEditor::_update_config() {
 		drop_label->set_visible(false);
 	}
 	for (int i = 0; i < props.size(); i++) {
-		const NodePath path = props[i];
+		const NodePath &path = props[i];
 		_add_property(path, config->property_get_sync(path));
 	}
 }
@@ -612,8 +612,12 @@ void SaveloadEditor::edit(SaveloadSynchronizer *p_sync) {
 }
 
 Ref<Texture2D> SaveloadEditor::_get_class_icon(const Node *p_node) {
-	if (!p_node || !has_theme_icon(p_node->get_class(), "EditorIcons")) {
-		return get_theme_icon(StringName("ImportFail"), StringName("EditorIcons"));
+    if (!p_node) {
+        return get_theme_icon(SNAME("ImportFail"), SNAME("EditorIcons"));
+    }
+	if (!has_theme_icon(p_node->get_class(), "EditorIcons")) {
+        // TODO: check if it's a script and return the icon for the script
+		return get_theme_icon(StringName("Node"), StringName("EditorIcons"));
 	}
 	return get_theme_icon(p_node->get_class(), "EditorIcons");
 }
