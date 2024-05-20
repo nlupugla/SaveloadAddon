@@ -1,7 +1,7 @@
-/addons/Saveload/bin/saveload.windows.template_debug.x86_64.dll
-/addons/Saveload/bin/saveload.windows.template_debug.x86_64.exp
-/addons/Saveload/bin/saveload.windows.template_debug.x86_64.lib
-/addons/Saveload/bin/saveload.windows.template_debug.x86_64.pdb
+*saveload.windows.template_debug.x86_64.dll
+*saveload.windows.template_debug.x86_64.exp
+*saveload.windows.template_debug.x86_64.lib
+*saveload.windows.template_debug.x86_64.pdb
 
 demo/.godot/
 demo/android/
