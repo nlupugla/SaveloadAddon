@@ -129,7 +129,7 @@ SaveloadSpawner::SpawnerState::SpawnerState(const TypedArray<Dictionary> &p_arra
 #ifdef TOOLS_ENABLED
 /* This is editor only */
 bool SaveloadSpawner::_set(const StringName &p_name, const Variant &p_value) {
-	if (p_name == "_spawnable_scene_count") {
+	if (p_name == StringName("_spawnable_scene_count")) {
 		spawnable_scenes.resize(p_value);
 		notify_property_list_changed();
 		return true;
@@ -146,7 +146,7 @@ bool SaveloadSpawner::_set(const StringName &p_name, const Variant &p_value) {
 }
 
 bool SaveloadSpawner::_get(const StringName &p_name, Variant &r_ret) const {
-	if (p_name == "_spawnable_scene_count") {
+	if (p_name == StringName("_spawnable_scene_count")) {
 		r_ret = spawnable_scenes.size();
 		return true;
 	} else {
@@ -163,8 +163,12 @@ bool SaveloadSpawner::_get(const StringName &p_name, Variant &r_ret) const {
 
 void SaveloadSpawner::_get_property_list(List<PropertyInfo> *p_list) const {
 	p_list->push_back(PropertyInfo(Variant::INT, "_spawnable_scene_count", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_ARRAY, "Auto Spawn List,scenes/"));
-	List<String> exts;
+#ifdef GDEXTENSION
+    PackedStringArray exts = ResourceLoader::get_singleton()->get_recognized_extensions_for_type("PackedScene");
+#elif
+    List<String> exts;
 	ResourceLoader::get_recognized_extensions_for_type("PackedScene", &exts);
+#endif
 	String ext_hint;
 	for (const String &E : exts) {
 		if (!ext_hint.is_empty()) {
@@ -215,11 +219,7 @@ void SaveloadSpawner::add_spawnable_scene(const String &p_path) {
 	}
 #endif
 	Node *node = get_spawn_parent();
-#ifdef GDEXTENSION
-    Callable node_added_callable = Callable(this, StringName("_node_added"));
-#elif
-    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added));
-#endif
+    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added);
     if (spawnable_scenes.size() == 1 && node && !node->is_connected(StringName("child_entered_tree"), node_added_callable)) {
         node->connect(StringName("child_entered_tree"), node_added_callable);
     }
@@ -242,17 +242,13 @@ void SaveloadSpawner::clear_spawnable_scenes() {
 	}
 #endif
 	Node *node = get_spawn_parent();
-#ifdef GDEXTENSION
-    Callable node_added_callable = Callable(this, "_node_added");
-#elif
-    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added));
-#endif
+    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added);
 	if (node && node->is_connected(StringName("child_entered_tree"), node_added_callable)) {
 		node->disconnect(StringName("child_entered_tree"), node_added_callable);
 	}
 }
 
-TypedArray<String> SaveloadSpawner::_get_spawnable_scenes() const {
+PackedStringArray SaveloadSpawner::_get_spawnable_scenes() const {
 	TypedArray<String> ss;
 	ss.resize(spawnable_scenes.size());
 	for (int i = 0; i < ss.size(); i++) {
@@ -261,7 +257,7 @@ TypedArray<String> SaveloadSpawner::_get_spawnable_scenes() const {
 	return ss;
 }
 
-void SaveloadSpawner::_set_spawnable_scenes(const TypedArray<String> &p_scenes) {
+void SaveloadSpawner::_set_spawnable_scenes(const PackedStringArray &p_scenes) {
 	clear_spawnable_scenes();
 	for (int i = 0; i < p_scenes.size(); i++) {
 		add_spawnable_scene(p_scenes[i]);
@@ -303,11 +299,7 @@ void SaveloadSpawner::_update_spawn_parent() {
 	//		return;
 	//	}
 	//#endif
-#ifdef GDEXTENSION
-    Callable node_added_callable = Callable(this, "_node_added");
-#elif
-    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added));
-#endif
+    Callable node_added_callable = callable_mp(this, &SaveloadSpawner::_node_added);
 	if (spawn_parent_id.is_valid()) {
 		Node *spawn_parent = Object::cast_to<Node>(ObjectDB::get_instance(spawn_parent_id));
 		if (spawn_parent && spawn_parent->is_connected("child_entered_tree", node_added_callable)) {
@@ -340,11 +332,7 @@ void SaveloadSpawner::_notification(int p_what) {
 				NodePath path = spawn_infos[size - 1 - i].path;
 				Node *node = get_node_or_null(path);
 				ERR_CONTINUE_MSG(!node, vformat("could not find node at path %s", path));
-#ifdef GDEXTENSION
-                Callable node_exit_callable = Callable(this, "_node_exit");
-#elif
-                Callable node_exit_callable = callable_mp(this, &SaveloadSpawner::_node_added));
-#endif
+                Callable node_exit_callable = callable_mp(this, &SaveloadSpawner::_node_exit);
 				node->disconnect(StringName("tree_exiting"), node_exit_callable);
 			}
 			spawner_state.clear();
@@ -384,23 +372,15 @@ void SaveloadSpawner::_track(Node *p_node, int p_scene_index, const Variant &p_s
 	if (!spawner_state.has(node_path)) { //TODO: Is this redundant with the checks in _noded_added?
 		SpawnInfo spawn_info = SpawnInfo(node_path, p_scene_index, p_spawn_args);
 		spawner_state.push_back(spawn_info);
-#ifdef GDEXTENSION
-        Callable node_exit_callable = Callable(this, "_node_exit");
-        Array args = Array();
-        args.push_back(p_node->get_instance_id());
-        p_node->connect(StringName("tree_exiting"), node_exit_callable.bindv(args), CONNECT_ONE_SHOT);
-#elif
-        Callable node_exit_callable = callable_mp(this, &SaveloadSpawner::_node_added));
-        p_node->connect(StringName("tree_exiting"), node_exit_callable.bind(p_node->get_instance_id()), CONNECT_ONE_SHOT);
-#endif
+        Callable node_exit_callable = callable_mp(this, &SaveloadSpawner::_node_exit).bind(p_node);
+        p_node->connect(StringName("tree_exiting"), node_exit_callable, CONNECT_ONE_SHOT);
         SaveloadAPI::get_singleton()->track(this);
 	}
 }
 
-void SaveloadSpawner::_node_exit(ObjectID p_id) {
-	Node *node = Object::cast_to<Node>(ObjectDB::get_instance(p_id));
-	ERR_FAIL_COND_MSG(!node, vformat("could not find a Node at object id %s", p_id));
-	spawner_state.erase(node->get_path());
+void SaveloadSpawner::_node_exit(const Node *p_node) {
+    ERR_FAIL_NULL(p_node);
+	spawner_state.erase(p_node->get_path());
 }
 
 int SaveloadSpawner::find_spawnable_scene_index_from_path(const String &p_scene) const {

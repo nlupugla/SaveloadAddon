@@ -22,10 +22,10 @@ opts = Variables([], ARGUMENTS)
 
 opts.Update(env)
 
-result_path = os.path.join("demo", "bin")
+result_path = os.path.join("addons", "Saveload", "bin")
 
 # Our includes and sources
-env.Append(CPPDEFINES=["GDEXTENSION"])  # Tells our sources we are building a GDExtension, not a module.
+env.Append(CPPDEFINES=["GDEXTENSION", "TOOLS_ENABLED"])  # Tells our sources we are building a GDExtension, not a module.
 sources = [
     "src/register_types.cpp",
     "src/saveload_api.cpp",

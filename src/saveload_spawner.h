@@ -110,12 +110,10 @@ private:
 	Error _spawn(const String &p_name, int p_scene_index, const Variant &p_spawn_args = Variant());
 	void _track(Node *p_node, int p_scene_index, const Variant &p_spawn_args = Variant());
 	void _node_added(Node *p_node);
-	void _node_exit(ObjectID p_id);
+	void _node_exit(const Node *p_id);
 
-//	Vector<String> _get_spawnable_scenes() const;
-//	void _set_spawnable_scenes(const Vector<String> &p_scenes);
-    TypedArray<String> _get_spawnable_scenes() const;
-    void _set_spawnable_scenes(const TypedArray<String> &p_scenes);
+    PackedStringArray _get_spawnable_scenes() const;
+    void _set_spawnable_scenes(const PackedStringArray &p_scenes);
 
 protected:
 	static void _bind_methods();

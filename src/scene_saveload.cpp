@@ -199,8 +199,7 @@ SceneSaveload::SaveloadState::SaveloadState(const Dictionary &p_saveload_dict) {
         TypedArray<Dictionary> spawn_state_as_array = spawn_states_dict[spawn_key];
         spawner_states.insert(spawn_key, SaveloadSpawner::SpawnerState(spawn_state_as_array));
     }
-    Array sync_keys;
-    sync_states_dict.keys();
+    Array sync_keys = sync_states_dict.keys();
     for (int i = 0; i < sync_keys.size(); i++) {
         NodePath sync_key = sync_keys[i];
         Dictionary sync_state_as_dict = sync_states_dict[sync_key];

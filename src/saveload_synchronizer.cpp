@@ -29,7 +29,9 @@
 /**************************************************************************/
 
 #include "saveload_synchronizer.h"
+
 #include "saveload_api.h"
+#include "godot_cpp/classes/engine.hpp"
 
 Dictionary SaveloadSynchronizer::SyncherState::to_dict() const {
 	Dictionary dict;

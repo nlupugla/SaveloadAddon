@@ -30,7 +30,7 @@
 
 #include "saveload_api.h"
 
-SaveloadAPI *SaveloadAPI::singleton = NULL;
+SaveloadAPI *SaveloadAPI::singleton = nullptr;
 
 SaveloadAPI *SaveloadAPI::get_singleton() {
 	return singleton;

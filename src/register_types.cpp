@@ -36,7 +36,6 @@
 #include "scene_saveload.h"
 
 #ifdef GDEXTENSION
-#define TOOLS_ENABLED
 #include "editor/saveload_editor.h"
 #include <godot_cpp/classes/engine.hpp>
 #endif
@@ -45,7 +44,7 @@
 #include "editor/saveload_editor_plugin.h"
 #endif
 
-static SaveloadAPI *saveload_api = NULL;
+static SaveloadAPI *saveload_api = nullptr;
 
 void initialize_saveload_module(ModuleInitializationLevel p_level) {
 
@@ -87,7 +86,7 @@ void uninitialize_saveload_module(ModuleInitializationLevel p_level) {
         Engine::get_singleton()->remove_singleton("SaveloadAPI");
 #endif
         memdelete(saveload_api);
-        saveload_api = NULL;
+        saveload_api = nullptr;
     }
 }
 

@@ -36,70 +36,85 @@
 #include "saveload_synchronizer.h"
 
 #ifdef GDEXTENSION
+
 #include <godot_cpp/variant/utility_functions.hpp>
+
 #endif
 
 class SceneSaveload : public SaveloadAPI {
-	GDCLASS(SceneSaveload, SaveloadAPI);
+GDCLASS(SceneSaveload, SaveloadAPI);
 
 private:
 
 #ifdef GDEXTENSION
     typedef uint64_t ID;
-    template <class T>
+
+    template<class T>
     static T *get_id_as(const ID &p_id) {
-        return UtilityFunctions::is_instance_id_valid(p_id) ? Object::cast_to<T>(ObjectDB::get_instance(p_id)) : nullptr;
+        return UtilityFunctions::is_instance_id_valid(p_id) ? Object::cast_to<T>(ObjectDB::get_instance(p_id))
+                                                            : nullptr;
     }
+
 #elif
     typedef ObjectID ID;
     template <class T>
-	static T *get_id_as(const ID &p_id) {
-		return p_id.is_valid() ? Object::cast_to<T>(ObjectDB::get_instance(p_id)) : nullptr;
-	}
+    static T *get_id_as(const ID &p_id) {
+        return p_id.is_valid() ? Object::cast_to<T>(ObjectDB::get_instance(p_id)) : nullptr;
+    }
 #endif
 
-template <class T>
-T *get_node(const NodePath &p_path);
+    template<class T>
+    T *get_node(const NodePath &p_path);
 
 protected:
-	static void _bind_methods();
+    static void _bind_methods();
 
-	struct SaveloadState {
-		HashMap<const NodePath, SaveloadSpawner::SpawnerState> spawner_states;
-		HashMap<const NodePath, SaveloadSynchronizer::SyncherState> syncher_states;
+    struct SaveloadState {
+        HashMap<const NodePath, SaveloadSpawner::SpawnerState> spawner_states;
+        HashMap<const NodePath, SaveloadSynchronizer::SyncherState> syncher_states;
 
-		Dictionary to_dict() const;
+        Dictionary to_dict() const;
 
-		SaveloadState() {}
-		SaveloadState(const Dictionary &saveload_dict);
-	};
+        SaveloadState() {}
 
-	HashSet<ID> spawners;
-	HashSet<ID> synchers;
+        SaveloadState(const Dictionary &saveload_dict);
+    };
 
-	void track_spawner(const SaveloadSpawner &p_spawner);
-	void untrack_spawner(const SaveloadSpawner &p_spawner);
-	void track_syncher(const SaveloadSynchronizer &p_syncher);
-	void untrack_syncher(const SaveloadSynchronizer &p_syncher);
+    HashSet<ID> spawners;
+    HashSet<ID> synchers;
 
-	SaveloadState get_saveload_state() const;
-	Error load_saveload_state(const SaveloadState &p_saveload_state);
+    void track_spawner(const SaveloadSpawner &p_spawner);
+
+    void untrack_spawner(const SaveloadSpawner &p_spawner);
+
+    void track_syncher(const SaveloadSynchronizer &p_syncher);
+
+    void untrack_syncher(const SaveloadSynchronizer &p_syncher);
+
+    SaveloadState get_saveload_state() const;
+
+    Error load_saveload_state(const SaveloadState &p_saveload_state);
 
 public:
-	TypedArray<SaveloadSpawner> get_spawners() const;
-	TypedArray<SaveloadSynchronizer> get_synchers() const;
+    TypedArray<SaveloadSpawner> get_spawners() const;
 
-	Error track(Object *p_object);
-	Error untrack(Object *p_object);
+    TypedArray<SaveloadSynchronizer> get_synchers() const;
 
-	Variant serialize(const Variant &p_configuration_data = Variant());
-	Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant());
+    Error track(Object *p_object) override;
 
-	Error save(const String &p_path, const Variant &p_configuration_data = Variant());
-	Error load(const String &p_path, const Variant &p_configuration_data = Variant());
+    Error untrack(Object *p_object) override;
 
-	SceneSaveload() {}
-	~SceneSaveload() {}
+    Variant serialize(const Variant &p_configuration_data = Variant()) override;
+
+    Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant()) override;
+
+    Error save(const String &p_path, const Variant &p_configuration_data = Variant()) override;
+
+    Error load(const String &p_path, const Variant &p_configuration_data = Variant()) override;
+
+    SceneSaveload() {}
+
+    ~SceneSaveload() {}
 };
 
 #endif // SCENE_SAVELOAD_H

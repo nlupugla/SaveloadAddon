@@ -44,27 +44,31 @@ using namespace godot;
 #endif
 
 class SaveloadAPI : public Object {
-	GDCLASS(SaveloadAPI, Object);
+GDCLASS(SaveloadAPI, Object);
 
-	static SaveloadAPI *singleton;
+    static SaveloadAPI *singleton;
 
 protected:
-	static void _bind_methods();
+    static void _bind_methods();
 
 public:
-	static SaveloadAPI *get_singleton();
+    static SaveloadAPI *get_singleton();
 
-	Error track(Object *p_object) { return ERR_BUG; }
-	Error untrack(Object *p_object) { return ERR_BUG; }
+    virtual Error track(Object *p_object) { return ERR_BUG; }
 
-	Variant serialize(const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
-	Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant()) {return ERR_BUG; }
+    virtual Error untrack(Object *p_object) { return ERR_BUG; }
 
-	Error save(const String &p_path, const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
-	Error load(const String &p_path, const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
+    virtual Variant serialize(const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
 
-	SaveloadAPI() { singleton = this; }
-	~SaveloadAPI() { singleton = nullptr; }
+    virtual Error deserialize(const Variant &p_serialized_state, const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
+
+    virtual Error save(const String &p_path, const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
+
+    virtual Error load(const String &p_path, const Variant &p_configuration_data = Variant()) { return ERR_BUG; }
+
+    SaveloadAPI() { singleton = this; }
+
+    ~SaveloadAPI() { singleton = nullptr; }
 };
 
 //class SaveloadAPIExtension : public SaveloadAPI {
